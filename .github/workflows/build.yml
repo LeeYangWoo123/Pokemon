@@ -7,12 +7,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # v3에서 v4로 업그레이드
+      - uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v5 # v4에서 v5로 업그레이드
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install Dependencies
         run: |
@@ -25,13 +25,21 @@ jobs:
 
       - name: Build APK
         run: |
-          # 현재 폴더의 파일 목록을 출력해 확인 (디버깅용)
+          # 1. 파일 목록 확인 (디버깅용)
           ls -R
-          # 빌드 명령어 (파일명이 main.py인지 꼭 확인하세요!)
+          
+          # 2. Flet 프로젝트 설정 초기화 (핵심!)
+          # 이 과정이 빠지면 설정 파일 부재로 exit code 2가 발생할 수 있습니다.
+          flet create . --app-name "PokemonApp" --description "Pokemon Type Checker"
+          
+          # 3. 기존에 우리가 만든 main.py가 사라지지 않도록 보호하며 빌드
+          # 만약 파일명이 main.py가 아니라면 아래 이름을 수정하세요.
           flet build apk --target main.py
+        continue-on-error: false
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: pokemon-app-apk
           path: build/apk/*.apk
+          if-no-files-found: error
