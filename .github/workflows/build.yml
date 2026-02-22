@@ -28,9 +28,9 @@ jobs:
           # 1. 빌드 준비
           mkdir -p assets
           
-          # 2. 최신 Flet 문법에 맞춘 빌드 명령어
-          # --target 옵션을 빼고 파일명만 적습니다.
-          flet build apk main.py
+          # 2. 질문에 자동으로 'y'를 답하도록 --yes 옵션 추가
+          # 최신 Flet에서는 빌드 시 필요한 도구를 알아서 설치하도록 허용해야 합니다.
+          flet build apk main.py --yes
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
