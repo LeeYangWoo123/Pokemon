@@ -1,10 +1,12 @@
 import flet as ft
 
-# 데이터 정의 (기존과 동일)
-types_18 = ["노말", "불꽃", "물", "풀", "전기", "얼음", "격투", "독", "땅", 
-            "비행", "에스퍼", "벌레", "바위", "고스트", "드래곤", "악", "강철", "페어리"]
+# 1. 데이터 정의
+TYPES = ["노말", "불꽃", "물", "풀", "전기", "얼음", "격투", "독", "땅", 
+         "비행", "에스퍼", "벌레", "바위", "고스트", "드래곤", "악", "강철", "페어리"]
 
-defense_chart = {
+W, R, Z = 1.6, 0.625, 0.390625
+
+DEFENSE_CHART = {
     "노말": {"weak": ["격투"], "resist": [], "zero": ["고스트"]},
     "불꽃": {"weak": ["물", "땅", "바위"], "resist": ["불꽃", "풀", "얼음", "벌레", "강철", "페어리"], "zero": []},
     "물": {"weak": ["풀", "전기"], "resist": ["불꽃", "물", "얼음", "강철"], "zero": []},
@@ -25,7 +27,7 @@ defense_chart = {
     "페어리": {"weak": ["독", "강철"], "resist": ["격투", "벌레", "악"], "zero": ["드래곤"]}
 }
 
-attack_strengths = {
+ATTACK_STRENGTHS = {
     "노말": [], "불꽃": ["풀", "얼음", "벌레", "강철"], "물": ["불꽃", "땅", "바위"],
     "풀": ["물", "땅", "바위"], "전기": ["물", "비행"], "얼음": ["풀", "땅", "비행", "드래곤"],
     "격투": ["노말", "얼음", "바위", "악", "강철"], "독": ["풀", "페어리"],
@@ -37,71 +39,108 @@ attack_strengths = {
 }
 
 def main(page: ft.Page):
-    page.title = "포켓몬 상성 도우미"
-    page.theme_mode = "dark" # 문자열로 설정
+    page.title = "포켓몬 GO 상성 계산기"
+    page.theme_mode = ft.ThemeMode.DARK
+    page.window.width = 450
+    page.window.height = 850
+    page.scroll = ft.ScrollMode.ADAPTIVE
     page.padding = 20
-    page.scroll = "adaptive"
 
-    type_input = ft.TextField(
-        label="타입 입력 (예: 물 비행)",
-        hint_text="띄어쓰기로 구분",
-        border_radius=10
-    )
-    
-    result_col = ft.Column(spacing=10)
+    selected_types = []
+    result_container = ft.Column(spacing=10)
+    attack_info = ft.Text("", size=14, color=ft.Colors.BLUE_200)
 
-    def create_result_card(title, types, color_str):
-        if not types: return ft.Container()
-        # ft.colors.with_opacity 대신 직접 투명도가 포함된 색상 코드나 단순 이름을 사용
-        return ft.Container(
-            content=ft.Column([
-                ft.Text(title, weight="bold", color=color_str, size=16),
-                ft.Text(", ".join(types), size=14, color="white")
-            ]),
-            padding=15,
-            bgcolor="black", # 가장 안전한 배경색
-            border_radius=10,
-            border=ft.border.all(1, color_str)
-        )
-
-    def calculate(e):
-        result_col.controls.clear()
-        raw_input = type_input.value.strip().split()
-        targets = [t for t in raw_input if t in types_18]
-
-        if not targets:
-            result_col.controls.append(ft.Text("❌ 올바른 타입을 입력하세요.", color="red"))
+    def update_result():
+        result_container.controls.clear()
+        if not selected_types:
+            attack_info.value = ""
             page.update()
             return
 
-        multipliers = {t: 1.0 for t in types_18}
-        for t in targets:
-            chart = defense_chart[t]
-            for w in chart["weak"]: multipliers[w] *= 2.0
-            for r in chart["resist"]: multipliers[r] *= 0.5
-            for z in chart["zero"]: multipliers[z] *= 0.0
-
-        res = {4.0: [], 2.0: [], 0.5: [], 0.25: [], 0.0: []}
-        for t, m in multipliers.items():
-            if m in res: res[m].append(t)
+        multipliers = {t: 1.0 for t in TYPES}
+        for t in selected_types:
+            chart = DEFENSE_CHART[t]
+            for w in chart["weak"]: multipliers[w] *= W
+            for r in chart["resist"]: multipliers[r] *= R
+            for z in chart["zero"]: multipliers[z] *= Z
 
         atk_s = set()
-        for t in targets: atk_s.update(attack_strengths[t])
+        for t in selected_types: atk_s.update(ATTACK_STRENGTHS[t])
+        attack_info.value = f"⚔️ 자속 보정 공격 강점: {', '.join(atk_s) if atk_s else '없음'}"
 
-        result_col.controls.append(ft.Text(f"📊 {' + '.join(targets)} 분석", size=20, weight="bold"))
-        result_col.controls.append(create_result_card("⚔️ 자속 공격 유리 (x2.0)", list(atk_s), "orange"))
-        result_col.controls.append(create_result_card("💀 치명적 약점 (x4.0)", res[4.0], "red"))
-        result_col.controls.append(create_result_card("⚠️ 주요 약점 (x2.0)", res[2.0], "pink"))
-        result_col.controls.append(create_result_card("🚫 무효 (x0.0)", res[0.0], "grey"))
-        result_col.controls.append(create_result_card("✅ 반감 (x0.5)", res[0.5], "green"))
-        result_col.controls.append(create_result_card("💎 강한 반감 (x0.25)", res[0.25], "cyan"))
+        sorted_res = sorted(multipliers.items(), key=lambda x: x[1], reverse=True)
+        for t, m in sorted_res:
+            if 0.99 <= m <= 1.01: continue
+            
+            # 아이콘 이름 변경: SHIELD_SHAPED -> SHIELD 등으로 교체
+            if m > 2.0:
+                color, label, icon = ft.Colors.RED_900, "치명적 약점", ft.Icons.GPP_BAD
+            elif m > 1.0:
+                color, label, icon = ft.Colors.RED_400, "약점", ft.Icons.WARNING_ROUNDED
+            elif m < 0.5:
+                color, label, icon = ft.Colors.BLUE_900, "최강 내성", ft.Icons.SHIELD
+            else:
+                color, label, icon = ft.Colors.BLUE_400, "내성", ft.Icons.SHIELD_OUTLINED
+
+            result_container.controls.append(
+                ft.Container(
+                    content=ft.Row([
+                        ft.Row([ft.Icon(icon, color=color, size=20), ft.Text(f" {t}", weight="bold")]),
+                        ft.Text(f"{label} (x{m:.3f})", color=color, weight="bold")
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    padding=12,
+                    bgcolor=ft.Colors.with_opacity(0.1, color),
+                    border=ft.border.all(1, ft.Colors.with_opacity(0.3, color)),
+                    border_radius=10
+                )
+            )
         page.update()
 
+    def on_type_click(e):
+        t = e.control.data
+        if t in selected_types:
+            selected_types.remove(t)
+            e.control.bgcolor = ft.Colors.GREY_800
+        else:
+            if len(selected_types) >= 2: return
+            selected_types.append(t)
+            e.control.bgcolor = ft.Colors.BLUE_700
+        
+        selected_text.value = f"선택된 타입: {' / '.join(selected_types)}" if selected_types else "타입을 선택해 주세요 (최대 2개)"
+        update_result()
+
+    selected_text = ft.Text("타입을 선택해 주세요 (최대 2개)", size=16, weight="w600")
+    
+    type_grid = ft.GridView(
+        expand=False,
+        runs_count=3,
+        max_extent=130,
+        child_aspect_ratio=2.2,
+        spacing=8,
+    )
+
+    for t in TYPES:
+        type_grid.controls.append(
+            ft.Container(
+                content=ft.Text(t, weight="bold", color=ft.Colors.WHITE),
+                alignment=ft.Alignment(0, 0),
+                bgcolor=ft.Colors.GREY_800,
+                border_radius=8,
+                on_click=on_type_click,
+                data=t,
+            )
+        )
+
     page.add(
-        ft.Text("포켓몬 상성 계산기", size=28, weight="bold"),
-        type_input,
-        ft.ElevatedButton("계산하기", on_click=calculate, width=400),
-        result_col
+        ft.Text("POKÉMON GO", size=28, weight="black", color=ft.Colors.BLUE_400),
+        ft.Text("Type Effectiveness Calculator", size=14, color=ft.Colors.GREY_400),
+        ft.Divider(height=30, color=ft.Colors.GREY_800),
+        selected_text,
+        ft.Container(type_grid, margin=ft.margin.only(top=10, bottom=10)),
+        attack_info,
+        ft.Divider(height=30, color=ft.Colors.GREY_800),
+        ft.Text("🛡️ 방어 상성 분석", size=18, weight="bold"),
+        result_container
     )
 
 if __name__ == "__main__":
