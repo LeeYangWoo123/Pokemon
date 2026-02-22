@@ -1,16 +1,16 @@
 name: Build Flet APK
 on:
   push:
-    branches: [ main ] # 코드가 push될 때 실행
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4 # v3에서 v4로 업그레이드
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # v4에서 v5로 업그레이드
         with:
           python-version: '3.10'
 
@@ -25,11 +25,13 @@ jobs:
 
       - name: Build APK
         run: |
-          # flet build apk 명령어로 빌드 수행
+          # 현재 폴더의 파일 목록을 출력해 확인 (디버깅용)
+          ls -R
+          # 빌드 명령어 (파일명이 main.py인지 꼭 확인하세요!)
           flet build apk --target main.py
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4  # v4로 변경
+        uses: actions/upload-artifact@v4
         with:
           name: pokemon-app-apk
           path: build/apk/*.apk
