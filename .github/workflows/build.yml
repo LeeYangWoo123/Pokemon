@@ -25,17 +25,12 @@ jobs:
 
       - name: Build APK
         run: |
-          # 1. 파일 목록 확인 (디버깅용)
-          ls -R
+          # 1. 빌드 준비
+          mkdir -p assets
           
-          # 2. Flet 프로젝트 설정 초기화 (핵심!)
-          # 이 과정이 빠지면 설정 파일 부재로 exit code 2가 발생할 수 있습니다.
-          flet create . --app-name "PokemonApp" --description "Pokemon Type Checker"
-          
-          # 3. 기존에 우리가 만든 main.py가 사라지지 않도록 보호하며 빌드
-          # 만약 파일명이 main.py가 아니라면 아래 이름을 수정하세요.
+          # 2. 불필요한 옵션을 모두 제거한 기본 빌드 명령어
+          # --app-name 같은 인자가 에러를 일으키므로 빼버립니다.
           flet build apk --target main.py
-        continue-on-error: false
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
