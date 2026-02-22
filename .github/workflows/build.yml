@@ -1,0 +1,35 @@
+name: Build Flet APK
+on:
+  push:
+    branches: [ main ] # 코드가 push될 때 실행
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install flet
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Build APK
+        run: |
+          # flet build apk 명령어로 빌드 수행
+          flet build apk --target main.py
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: pokemon-app-apk
+          path: build/apk/*.apk
