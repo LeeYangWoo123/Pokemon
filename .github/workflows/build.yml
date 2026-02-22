@@ -28,9 +28,9 @@ jobs:
           # 1. 빌드 준비
           mkdir -p assets
           
-          # 2. 질문에 자동으로 'y'를 답하도록 --yes 옵션 추가
-          # 최신 Flet에서는 빌드 시 필요한 도구를 알아서 설치하도록 허용해야 합니다.
-          flet build apk main.py --yes
+          # 2. 현재 폴더(.)를 기준으로 빌드 진행
+          # --yes로 자동 승인하고, 파일이 루트에 있다면 자동으로 main.py를 찾습니다.
+          flet build apk . --yes
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
