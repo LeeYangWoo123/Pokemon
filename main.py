@@ -44,7 +44,7 @@ def main(page: ft.Page):
     page.window.width = 450
     page.window.height = 850
     page.scroll = ft.ScrollMode.ADAPTIVE
-    page.padding = 20
+    page.padding = ft.padding.only(left=20, top=20, right=20, bottom=100) # 아래쪽에 100만큼 여백
 
     selected_types = []
     result_container = ft.Column(spacing=10)
